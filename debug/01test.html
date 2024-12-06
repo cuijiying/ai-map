@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>test</title>
+    <!-- 单元测试 -->
+    <link rel="stylesheet" href="../dist/style.css">
+    <style>
+       *, *::before, *::after {
+        box-sizing: border-box; /* 设置所有元素的 box-sizing 为 border-box */
+        margin: 0; 
+        padding: 0;
+      }
+      html, body, #app {
+        height: 100%;
+        width: 100%;
+        background-color: #bdb6b6;
+      }
+      
+  
+    </style>
+  </head>
+  <body>
+    <div id="app">
+        <!-- <canvas width="1920" height="911"></canvas> -->
+    </div>
+  </body>
+</html>
+<script src="../dist/ai-map.umd.js"></script>
+<script>
+    // console.log(AIMap);
+    const map = new AIMap.Map({
+        container: 'app',
+        zoom: 13,
+        center: [117.130643,31.843211],
+    })
+    
+</script>

@@ -1,0 +1,1 @@
+1、使用vite --watch 命令做单元测试时，script标签的缓存问题，css没有缓存问题; 使用nodemon  --watch是没有缓存的

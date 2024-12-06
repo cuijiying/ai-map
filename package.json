@@ -1,0 +1,19 @@
+{
+  "name": "ai-map",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --open",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "watch-build": "nodemon  --watch src --ext ts,css --exec pnpm run build",
+    "watch": "vite build --watch"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.1",
+    "nodemon": "^3.1.7",
+    "typescript": "~5.6.2",
+    "vite": "^5.4.10"
+  }
+}
