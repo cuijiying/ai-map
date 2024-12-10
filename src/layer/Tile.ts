@@ -35,7 +35,7 @@ export default class Tile {
       // 图片是否加载完成
       this.loaded = false
   
-      this.                                                   ()
+      this.createUrl()
       this.load()
     }
       
