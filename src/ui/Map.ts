@@ -1,4 +1,4 @@
-import { TILE_SIZE } from "../config";
+import { TILE_SIZE, MIN_ZOOM, MAX_ZOOM } from "../config";
 import Tile from "../layer/Tile";
 import {
   resolutions,
@@ -70,6 +70,10 @@ export default class Map {
     }
     // 监听鼠标按下事件
     this.#canvas.addEventListener("mousedown", this.onMousedown.bind(this));
+    // 监听鼠标滚轮事件，实现缩放
+    this.#canvas.addEventListener("wheel", this.onWheel.bind(this), {
+      passive: false,
+    });
     if (this.#ctx) {
       this.#ctx.translate(this.#canvas.width / 2, this.#canvas.height / 2);
     }
@@ -188,6 +192,43 @@ export default class Map {
   onMouseup() {
     this.#isMousedown = false;
     console.log(this.#isMousedown, "mouseup");
+  }
+  // 鼠标滚轮缩放（以鼠标所在位置为中心进行缩放）
+  onWheel(e: WheelEvent) {
+    e.preventDefault();
+    if (!this.#canvas) {
+      return;
+    }
+    // 计算目标层级：向上滚放大，向下滚缩小
+    const delta = e.deltaY < 0 ? 1 : -1;
+    const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, this.#zoom + delta));
+    // 层级没有变化则不处理
+    if (newZoom === this.#zoom) {
+      return;
+    }
+    // 鼠标相对画布中心的像素偏移（画布原点已 translate 到中心）
+    const rect = this.#canvas.getBoundingClientRect();
+    const offsetX = e.clientX - rect.left - this.#canvas.width / 2;
+    const offsetY = e.clientY - rect.top - this.#canvas.height / 2;
+    // 当前层级下鼠标位置对应的墨卡托坐标
+    const oldResolution = resolutions[this.#zoom];
+    const [centerX, centerY] = lngLat2Mercator(
+      this.#center[0],
+      this.#center[1]
+    );
+    // 屏幕 y 向下为正，墨卡托 y 向上为正，所以 y 方向取反
+    const pointX = centerX + offsetX * oldResolution;
+    const pointY = centerY - offsetY * oldResolution;
+    // 更新层级
+    this.#zoom = newZoom;
+    // 在新层级下保持鼠标位置对应的地理坐标不变，反推新的中心点墨卡托坐标
+    const newResolution = resolutions[this.#zoom];
+    const newCenterX = pointX - offsetX * newResolution;
+    const newCenterY = pointY + offsetY * newResolution;
+    this.#center = mercatorTolnglat(newCenterX, newCenterY);
+    // 清除画布重新渲染瓦片
+    this.#clearTiles();
+    this.#renderTiles();
   }
   #clearTiles() {
     if (this.#ctx && this.#canvas) {
