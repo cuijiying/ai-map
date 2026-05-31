@@ -18,6 +18,8 @@ export default class Map {
   #ctx: CanvasRenderingContext2D | null = null;
   #isMousedown: boolean = false;
   #tileCache: any = {};
+  // 当前帧需要渲染的瓦片快照（每帧重新赋值，供异步加载完成的瓦片判断是否仍需绘制）
+  #currentTileCache: any = {};
   // 构造函数
   constructor(options: any) {
     // super();
@@ -113,7 +115,9 @@ export default class Map {
         (this.#canvas.height / 2 - (TILE_SIZE - offset[1])) / TILE_SIZE
       ); // 下
       // 从上到下，从左到右，加载瓦片
-      const currentTileCache:any = {}; // 清空缓存对象
+      // 重置当前帧需要渲染的瓦片快照（使用实例字段，保证异步加载完成的瓦片读取的是最新一帧的数据）
+      this.#currentTileCache = {};
+      const currentTileCache: any = this.#currentTileCache;
       for (let i = -rowMinNum; i <= rowMaxNum; i++) {
         for (let j = -colMinNum; j <= colMaxNum; j++) {
           // 当前瓦片的行列号
@@ -140,8 +144,9 @@ export default class Map {
               x,
               y,
               // 判断瓦片是否在当前画布缓存对象上，是的话则代表需要渲染
-              shouldRender: (key:string) => {
-                return currentTileCache[key];
+              // 始终读取实例上最新一帧的快照，避免闭包捕获过期帧导致迟到加载的瓦片在错误位置重复绘制
+              shouldRender: (key: string) => {
+                return this.#currentTileCache[key];
               },
             });
           }
@@ -185,8 +190,15 @@ export default class Map {
     console.log(this.#isMousedown, "mouseup");
   }
   #clearTiles() {
-    if (this.#ctx) {
-      this.#ctx.clearRect(0, 0, this.#canvas!.width, this.#canvas!.height);
+    if (this.#ctx && this.#canvas) {
+      // 画布原点已通过 translate 移到中心，瓦片绘制在以中心为原点的坐标系中，
+      // 因此清除时也要从 (-w/2, -h/2) 开始覆盖整个画布，否则只会清掉右下角导致残留重复。
+      this.#ctx.clearRect(
+        -this.#canvas.width / 2,
+        -this.#canvas.height / 2,
+        this.#canvas.width,
+        this.#canvas.height
+      );
     }
   }
 }
