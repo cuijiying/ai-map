@@ -226,9 +226,40 @@ export default class Map {
     const newCenterX = pointX - offsetX * newResolution;
     const newCenterY = pointY + offsetY * newResolution;
     this.#center = mercatorTolnglat(newCenterX, newCenterY);
-    // 清除画布重新渲染瓦片
-    this.#clearTiles();
+    // 先把缩放前的画面按比例缩放后作为过渡背景绘制，避免新层级瓦片加载完成前出现空白闪烁
+    this.#drawZoomPlaceholder(oldResolution, newResolution, offsetX, offsetY);
+    // 在过渡背景之上渲染新层级瓦片，加载完成后逐步覆盖背景
     this.#renderTiles();
+  }
+  // 缩放时绘制过渡背景：把当前画面截图，按缩放比例围绕鼠标位置缩放后铺到画布上
+  #drawZoomPlaceholder(
+    oldResolution: number,
+    newResolution: number,
+    offsetX: number,
+    offsetY: number
+  ) {
+    if (!this.#ctx || !this.#canvas) {
+      return;
+    }
+    const w = this.#canvas.width;
+    const h = this.#canvas.height;
+    // 截取当前画布像素到离屏画布（drawImage 复制的是设备像素，不受 translate 变换影响）
+    const snapshot = document.createElement("canvas");
+    snapshot.width = w;
+    snapshot.height = h;
+    const snapshotCtx = snapshot.getContext("2d");
+    if (!snapshotCtx) {
+      return;
+    }
+    snapshotCtx.drawImage(this.#canvas, 0, 0);
+    // 缩放比例：放大时 > 1，缩小时 < 1
+    const scale = oldResolution / newResolution;
+    // 清空主画布
+    this.#clearTiles();
+    // 围绕鼠标位置（offsetX, offsetY）缩放快照：截图左上角对应变换坐标系的 (-w/2, -h/2)
+    const dx = offsetX + (-w / 2 - offsetX) * scale;
+    const dy = offsetY + (-h / 2 - offsetY) * scale;
+    this.#ctx.drawImage(snapshot, dx, dy, w * scale, h * scale);
   }
   #clearTiles() {
     if (this.#ctx && this.#canvas) {
